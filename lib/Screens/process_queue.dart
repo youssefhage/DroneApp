@@ -1,4 +1,5 @@
 import 'package:aeroship/Screens/countdowntimer.dart';
+import 'package:aeroship/Screens/map_page.dart';
 import 'package:flutter/material.dart';
 
 List page_delegates = [
@@ -46,7 +47,8 @@ class _ProcessQueueState extends State<ProcessQueue> {
                   if (counter < 1) {
                     counter++;
                   } else {
-                    Navigator.pushNamed(context, CountDownTimer.id);
+                    Navigator.pushNamed(context, MapPage.id);
+                    // Navigator.pushNamed(context, CountDownTimer.id);
                     counter = 0;
                   }
                 });

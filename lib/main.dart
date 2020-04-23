@@ -1,4 +1,5 @@
 import 'package:aeroship/Screens/countdowntimer.dart';
+import 'package:aeroship/Screens/map_page.dart';
 import 'package:aeroship/Screens/process_queue.dart';
 import 'package:aeroship/Screens/send_to_page.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
         SendTo.id: (context) => SendTo(),
         ProcessQueue.id: (context) => ProcessQueue(),
         CountDownTimer.id: (context) => CountDownTimer(),
+        MapPage.id: (context) => MapPage(),
       },
     );
   }
