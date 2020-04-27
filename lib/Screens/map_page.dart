@@ -1,8 +1,7 @@
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:permission/permission.dart';
 
 void main() => runApp(MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -27,211 +26,87 @@ class MapPageState extends State<MapPage> {
 
   Completer<GoogleMapController> _controller = Completer();
 
-  static final CameraPosition _kGooglePlex =
-      CameraPosition(target: LatLng(12.988827, 77.472091), zoom: 13);
+  BitmapDescriptor pinLocationIcon;
+  Set<Marker> _markers = {};
+
+  void setCustomMapPin() async {
+    pinLocationIcon = await BitmapDescriptor.fromAssetImage(
+        ImageConfiguration(devicePixelRatio: 2.5),
+        'assets/destination_map_marker.png');
+  }
 
   @override
   void initState() {
     super.initState();
+    setCustomMapPin();
+    BitmapDescriptor.fromAssetImage(ImageConfiguration(devicePixelRatio: 2.5),
+            'assets/destination_map_marker.png')
+        .then((onValue) {
+      pinLocationIcon = onValue;
+    });
+    // lines.add(
+    //   Polyline(
+    //     points: [
+    //       LatLng(12.988827, 77.472091),
+    //       LatLng(12.980821, 77.470815),
+    //       LatLng(12.969406, 77.471301)
+    //     ],
+    //     endCap: Cap.squareCap,
+    //     geodesic: false,
+    //     polylineId: PolylineId("line_one"),
+    //   ),
+    // );
     lines.add(
       Polyline(
         points: [
-          LatLng(12.988827, 77.472091),
-          LatLng(12.980821, 77.470815),
-          LatLng(12.969406, 77.471301)
+          LatLng(33.919198461961564, 35.65664830959883),
+          LatLng(33.915754, 35.618627)
         ],
-        endCap: Cap.squareCap,
-        geodesic: false,
-        polylineId: PolylineId("line_one"),
-      ),
-    );
-    lines.add(
-      Polyline(
-        points: [LatLng(12.949798, 77.470534), LatLng(12.938614, 77.469379)],
-        color: Colors.amber,
+        color: Colors.red,
         polylineId: PolylineId("line_one"),
       ),
     );
   }
 
+  double currentLongitude = 0;
+  double currentLatitude = 0;
+  void getCurrentLocation() async {
+    Position currentLocator = await Geolocator()
+        .getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
+    setState(() {
+      currentLatitude = currentLocator.latitude;
+      currentLongitude = currentLocator.longitude;
+      print("Latitude: $currentLocator \nLongitude: $currentLongitude");
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    getCurrentLocation();
+    LatLng pinPosition = LatLng(33.919198461961564, 35.65664830959883);
+
+    final CameraPosition _kGooglePlex =
+        CameraPosition(target: pinPosition, zoom: 13);
     return MaterialApp(
       title: 'Google Maps Polylines',
       home: Scaffold(
         body: GoogleMap(
           mapType: MapType.normal,
           myLocationEnabled: true,
+          markers: _markers,
           initialCameraPosition: _kGooglePlex,
           onMapCreated: (GoogleMapController controller) {
             _controller.complete(controller);
+            setState(() {
+              _markers.add(Marker(
+                  markerId: MarkerId("<MARKER_ID>"),
+                  position: pinPosition,
+                  icon: pinLocationIcon));
+            });
           },
           polylines: lines,
         ),
       ),
     );
   }
-}
-
-class Utils {
-  static String mapStyles = '''[
-  {
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#f5f5f5"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.icon",
-    "stylers": [
-      {
-        "visibility": "off"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#616161"
-      }
-    ]
-  },
-  {
-    "elementType": "labels.text.stroke",
-    "stylers": [
-      {
-        "color": "#f5f5f5"
-      }
-    ]
-  },
-  {
-    "featureType": "administrative.land_parcel",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#bdbdbd"
-      }
-    ]
-  },
-  {
-    "featureType": "poi",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#eeeeee"
-      }
-    ]
-  },
-  {
-    "featureType": "poi",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#757575"
-      }
-    ]
-  },
-  {
-    "featureType": "poi.park",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#e5e5e5"
-      }
-    ]
-  },
-  {
-    "featureType": "poi.park",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#9e9e9e"
-      }
-    ]
-  },
-  {
-    "featureType": "road",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#ffffff"
-      }
-    ]
-  },
-  {
-    "featureType": "road.arterial",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#757575"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#dadada"
-      }
-    ]
-  },
-  {
-    "featureType": "road.highway",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#616161"
-      }
-    ]
-  },
-  {
-    "featureType": "road.local",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#9e9e9e"
-      }
-    ]
-  },
-  {
-    "featureType": "transit.line",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#e5e5e5"
-      }
-    ]
-  },
-  {
-    "featureType": "transit.station",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#eeeeee"
-      }
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "geometry",
-    "stylers": [
-      {
-        "color": "#c9c9c9"
-      }
-    ]
-  },
-  {
-    "featureType": "water",
-    "elementType": "labels.text.fill",
-    "stylers": [
-      {
-        "color": "#9e9e9e"
-      }
-    ]
-  }
-]''';
 }
