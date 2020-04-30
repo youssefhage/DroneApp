@@ -1,12 +1,16 @@
+import 'package:aeroship/Core/Coordinates.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-void main() => runApp(MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: MapPage(),
-    ));
+void main() => runApp(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: MapPage(),
+      ),
+    );
 
 // const double CAMERA_ZOOM = 13;
 // const double CAMERA_TILT = 0;
@@ -24,6 +28,18 @@ class MapPage extends StatefulWidget {
 class MapPageState extends State<MapPage> {
   Set<Polyline> lines = {};
 
+  List<Coordinates> listCoords = new List();
+
+  // final databaseReference = Firestore.instance;
+
+  // void getData() {
+  //   databaseReference.collection("books").getDocuments().then(
+  //     (QuerySnapshot snapshot) {
+  //       snapshot.documents.forEach((f) => print('${f.data}}'));
+  //     },
+  //   );
+  // }
+
   Completer<GoogleMapController> _controller = Completer();
 
   BitmapDescriptor pinLocationIcon;
@@ -31,8 +47,7 @@ class MapPageState extends State<MapPage> {
 
   void setCustomMapPin() async {
     pinLocationIcon = await BitmapDescriptor.fromAssetImage(
-        ImageConfiguration(devicePixelRatio: 2.5),
-        'assets/destination_map_marker.png');
+        ImageConfiguration(devicePixelRatio: 2.5), 'assets/driving_pin.png');
   }
 
   @override
@@ -70,43 +85,70 @@ class MapPageState extends State<MapPage> {
 
   double currentLongitude = 0;
   double currentLatitude = 0;
+
   void getCurrentLocation() async {
     Position currentLocator = await Geolocator()
         .getCurrentPosition(desiredAccuracy: LocationAccuracy.best);
-    setState(() {
-      currentLatitude = currentLocator.latitude;
-      currentLongitude = currentLocator.longitude;
-      print("Latitude: $currentLocator \nLongitude: $currentLongitude");
-    });
+    if (mounted) {
+      setState(
+        () {
+          currentLatitude = currentLocator.latitude;
+          currentLongitude = currentLocator.longitude;
+          print("Latitude: $currentLocator \nLongitude: $currentLongitude");
+        },
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    getCurrentLocation();
-    LatLng pinPosition = LatLng(33.919198461961564, 35.65664830959883);
+    // getCurrentLocation();
+    // getData();
+    LatLng pinPosition = LatLng(currentLatitude, currentLongitude);
 
     final CameraPosition _kGooglePlex =
         CameraPosition(target: pinPosition, zoom: 13);
-    return MaterialApp(
-      title: 'Google Maps Polylines',
-      home: Scaffold(
-        body: GoogleMap(
-          mapType: MapType.normal,
-          myLocationEnabled: true,
-          markers: _markers,
-          initialCameraPosition: _kGooglePlex,
-          onMapCreated: (GoogleMapController controller) {
-            _controller.complete(controller);
-            setState(() {
-              _markers.add(Marker(
-                  markerId: MarkerId("<MARKER_ID>"),
-                  position: pinPosition,
-                  icon: pinLocationIcon));
-            });
-          },
-          polylines: lines,
-        ),
-      ),
+    return StreamBuilder(
+      // DocumentSnapshot snapshot= await Firestore.instance.collection('channels').document('567890').
+      stream: Firestore.instance
+          .collection('coordinates')
+          .document('Receiver')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.data == null) {
+          return Text("No Data");
+        }
+        var userDocument = snapshot.data;
+
+        return MaterialApp(
+          title: 'Google Maps Polylines',
+          home: Scaffold(
+            body: GoogleMap(
+              mapType: MapType.normal,
+              myLocationEnabled: true,
+              markers: _markers,
+              initialCameraPosition: _kGooglePlex,
+              onMapCreated: (GoogleMapController controller) {
+                _controller.complete(controller);
+                _markers.add(Marker(
+                    markerId: MarkerId("<MARKER_ID>"),
+                    position: pinPosition,
+                    icon: pinLocationIcon));
+              },
+              polylines: {
+                Polyline(
+                  points: [
+                    LatLng(currentLatitude, currentLongitude),
+                    LatLng(userDocument["lat"], userDocument["lng"])
+                  ],
+                  color: Colors.red,
+                  polylineId: PolylineId("line_one"),
+                )
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }
